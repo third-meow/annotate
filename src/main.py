@@ -1,36 +1,34 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'main.ui'
-#
-# Created by: PyQt5 UI code generator 5.11.3
-#
-# WARNING! All changes made in this file will be lost!
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
 
+        self.imagePath = '/home/third-meow/datasets/bicycle_images/sandpit/bike.jpg'
+
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.setFixedSize(540, 540)
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.plainTextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit.setGeometry(QtCore.QRect(90, 120, 161, 51))
-        self.plainTextEdit.setObjectName("plainTextEdit")
-
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(90, 300, 161, 41))
+        self.label.setGeometry(QtCore.QRect(20, 20, 0, 0))
         self.label.setObjectName("label")
+
+        '''
+        self.openButton = QtWidgets.QPushButton(self.centralwidget)
+        self.openButton.setGeometry(QtCore.QRect(195, 230, 80, 20))
+        self.openButton.setText('Start Here')
+        self.openButton.setObjectName("openButton")
+        self.openButton.clicked.connect(lambda: self.showFileDialog())
+        '''
 
         MainWindow.setCentralWidget(self.centralwidget)
 
-
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 540, 24))
         self.menubar.setObjectName("menubar")
+        self.menubar.setStyleSheet("""background-color: #D0D0E1; border-bottom: 1px solid #28283E""")
 
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -44,9 +42,11 @@ class Ui_MainWindow(object):
 
         self.actionOpen = QtWidgets.QAction(MainWindow)
         self.actionOpen.setObjectName("actionOpen")
+        self.actionOpen.triggered.connect(lambda: self.showFileDialog())
 
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
+        self.actionQuit.triggered.connect(lambda: quit())
 
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addSeparator()
@@ -57,18 +57,25 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        self.actionOpen.triggered.connect(lambda: self.clicked("open action"))
+        self.showFileDialog()
+
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Annotate"))
-        self.label.setText(_translate("MainWindow", "Hello"))
+        self.label.setText(_translate("MainWindow", ""))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
 
-    def clicked(self, text):
-        self.label.setPixmap(QtGui.QPixmap('/home/third-meow/datasets/bicycle_images/sandpit/bike.jpg'))
+    def showFileDialog(self):
+        self.imagePath = QtWidgets.QFileDialog.getOpenFileName(directory='/home')[0]
+        self.showImage()
+
+    def showImage(self):
+        px = QtGui.QPixmap(self.imagePath)
+        px = px.scaled(500, 500)
+        self.label.setPixmap(px)
         self.label.adjustSize()
 
 
