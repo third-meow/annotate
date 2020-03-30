@@ -1,6 +1,37 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+def abs(x):
+    if x < 0:
+        return -x
+    else:
+        return x
+
+class ImageBoxLabel(QtWidgets.QLabel):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+        self.click_begin = []
+        self.click_end = []
+
+    def mousePressEvent(self, e):
+        self.click_begin = [e.x(), e.y()]
+
+
+    def mouseReleaseEvent(self, e):
+        self.click_end = [e.x(), e.y()]
+
+        box_x = min(self.click_end[0], self.click_begin[0])
+        box_y = min(self.click_end[1], self.click_begin[1])
+        box_width = abs(self.click_end[0] - self.click_begin[0])
+        box_height = abs(self.click_end[1] - self.click_begin[1])
+
+        self.roi = QtWidgets.QLabel(self)
+        self.roi.setGeometry(box_x, box_y, box_width, box_height)
+        self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
+        self.roi.show()
+
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
 
         self.imagePath = '/home/third-meow/datasets/bicycle_images/sandpit/bike.jpg'
@@ -11,7 +42,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label = ImageBoxLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(20, 20, 0, 0))
         self.label.setObjectName("label")
 
@@ -67,6 +98,7 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
+
 
     def showFileDialog(self):
         self.imagePath = QtWidgets.QFileDialog.getOpenFileName(directory='/home')[0]
