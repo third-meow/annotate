@@ -10,14 +10,33 @@ class ImageBoxLabel(QtWidgets.QLabel):
     def __init__(self, *args):
         super().__init__(*args)
 
+        self.setMouseTracking(True)
+
         self.click_begin = []
+        self.click_in_progress = False
         self.click_end = []
 
+        self.roi = QtWidgets.QLabel(self)
+
     def mousePressEvent(self, e):
+        self.roi = QtWidgets.QLabel(self)
+        self.click_in_progress = True
         self.click_begin = [e.x(), e.y()]
+
+    def mouseMoveEvent(self, e):
+        if (self.click_in_progress):
+            box_x = min(e.x(), self.click_begin[0])
+            box_y = min(e.y(), self.click_begin[1])
+            box_width = abs(e.x() - self.click_begin[0])
+            box_height = abs(e.y() - self.click_begin[1])
+
+            self.roi.setGeometry(box_x, box_y, box_width, box_height)
+            self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
+            self.roi.show()
 
 
     def mouseReleaseEvent(self, e):
+        self.click_in_progress = False
         self.click_end = [e.x(), e.y()]
 
         box_x = min(self.click_end[0], self.click_begin[0])
@@ -25,7 +44,6 @@ class ImageBoxLabel(QtWidgets.QLabel):
         box_width = abs(self.click_end[0] - self.click_begin[0])
         box_height = abs(self.click_end[1] - self.click_begin[1])
 
-        self.roi = QtWidgets.QLabel(self)
         self.roi.setGeometry(box_x, box_y, box_width, box_height)
         self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
         self.roi.show()
