@@ -1,14 +1,17 @@
+import os
+from pathlib import Path
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 def abs(x):
-    if x < 0:
-        return -x
+    if x < 0: return -x
     else:
         return x
 
 class ImageBoxLabel(QtWidgets.QLabel):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.onMouseReleaseFunc = (lambda: print('mouse release func not assigned'))
 
         self.setMouseTracking(True)
 
@@ -34,25 +37,20 @@ class ImageBoxLabel(QtWidgets.QLabel):
             self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
             self.roi.show()
 
+    def connectMouseRelease(self, func):
+        self.onMouseReleaseFunc = func
 
     def mouseReleaseEvent(self, e):
         self.click_in_progress = False
-        self.click_end = [e.x(), e.y()]
-
-        box_x = min(self.click_end[0], self.click_begin[0])
-        box_y = min(self.click_end[1], self.click_begin[1])
-        box_width = abs(self.click_end[0] - self.click_begin[0])
-        box_height = abs(self.click_end[1] - self.click_begin[1])
-
-        self.roi.setGeometry(box_x, box_y, box_width, box_height)
-        self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
-        self.roi.show()
+        self.roi.hide()
+        self.onMouseReleaseFunc()
 
 class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
 
-        self.imagePath = '/home/third-meow/datasets/bicycle_images/sandpit/bike.jpg'
+        self.imageDir = ''
+        self.imagePaths = []
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(540, 540)
@@ -63,14 +61,7 @@ class Ui_MainWindow(object):
         self.label = ImageBoxLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(20, 20, 0, 0))
         self.label.setObjectName("label")
-
-        '''
-        self.openButton = QtWidgets.QPushButton(self.centralwidget)
-        self.openButton.setGeometry(QtCore.QRect(195, 230, 80, 20))
-        self.openButton.setText('Start Here')
-        self.openButton.setObjectName("openButton")
-        self.openButton.clicked.connect(lambda: self.showFileDialog())
-        '''
+        self.label.connectMouseRelease(self.showNewImage)
 
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -107,6 +98,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
         self.showFileDialog()
+        self.showImage(0)
 
 
     def retranslateUi(self, MainWindow):
@@ -119,15 +111,33 @@ class Ui_MainWindow(object):
 
 
     def showFileDialog(self):
-        self.imagePath = QtWidgets.QFileDialog.getOpenFileName(directory='/home')[0]
-        self.showImage()
+        self.imageDir = \
+            QtWidgets.QFileDialog.getExistingDirectory(self.centralwidget, 'Open Image Dir', '/home')
+        self.genImageList()
 
-    def showImage(self):
-        px = QtGui.QPixmap(self.imagePath)
+    def genImageList(self):
+        pathlist_png = Path(self.imageDir).glob('**/*.png')
+        for filename in pathlist_png:
+            self.imagePaths.append(str(filename))
+
+        pathlist_jpg = Path(self.imageDir).glob('**/*.jpg')
+        for filename in pathlist_jpg:
+            self.imagePaths.append(str(filename))
+
+    def showImage(self, imageIdx):
+        px = QtGui.QPixmap(self.imagePaths[imageIdx])
+        px = px.scaled(500, 500)
+        self.label.currentIdx = imageIdx
+        self.label.setPixmap(px)
+        self.label.adjustSize()
+        self.label.show()
+
+    def showNewImage(self):
+        px = QtGui.QPixmap(self.imagePaths[8])
         px = px.scaled(500, 500)
         self.label.setPixmap(px)
         self.label.adjustSize()
-
+        self.label.show()
 
 if __name__ == "__main__":
     import sys
