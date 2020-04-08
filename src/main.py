@@ -37,7 +37,7 @@ class ImageBoxLabel(QtWidgets.QLabel):
             self.roi.setStyleSheet("""background-color: rgba(102, 255, 153, 0.6)""")
             self.roi.show()
 
-    def connectMouseRelease(self, func):
+    def onMouseRelease(self, func):
         self.onMouseReleaseFunc = func
 
     def mouseReleaseEvent(self, e):
@@ -61,7 +61,6 @@ class Ui_MainWindow(object):
         self.label = ImageBoxLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(20, 20, 0, 0))
         self.label.setObjectName("label")
-        self.label.connectMouseRelease(self.showNewImage)
 
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -125,19 +124,16 @@ class Ui_MainWindow(object):
             self.imagePaths.append(str(filename))
 
     def showImage(self, imageIdx):
-        px = QtGui.QPixmap(self.imagePaths[imageIdx])
-        px = px.scaled(500, 500)
-        self.label.currentIdx = imageIdx
+        try:
+            px = QtGui.QPixmap(self.imagePaths[imageIdx])
+        except IndexError:
+            quit()
+        px = px.scaled(200, 200)
+        self.label.onMouseRelease(lambda: self.showImage(imageIdx + 1))
         self.label.setPixmap(px)
         self.label.adjustSize()
         self.label.show()
 
-    def showNewImage(self):
-        px = QtGui.QPixmap(self.imagePaths[8])
-        px = px.scaled(500, 500)
-        self.label.setPixmap(px)
-        self.label.adjustSize()
-        self.label.show()
 
 if __name__ == "__main__":
     import sys
