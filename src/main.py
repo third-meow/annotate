@@ -1,25 +1,36 @@
 import os
-from pathlib import Path
-from PyQt5 import QtCore, QtGui, QtWidgets
+from pathlib import Path 
+from PyQt5 import QtCore, QtGui, QtWidgets 
+
+annotations = []
 
 def abs(x):
     if x < 0: return -x
-    else:
-        return x
+    else: return x
 
 class ImageBoxLabel(QtWidgets.QLabel):
     def __init__(self, parent):
         super().__init__(parent)
-
-        self.onMouseReleaseFunc = (lambda: print('mouse release func not assigned'))
-
         self.setMouseTracking(True)
 
-        self.click_begin = []
-        self.click_in_progress = False
-        self.click_end = []
-
+        # Qlabel to show selected area
         self.roi = QtWidgets.QLabel(self)
+        # scale factor representing how many times smaller the display image is
+        self.scale_factor = 1
+        # click begin and end coordinates
+        self.click_begin = []
+        self.click_end = []
+        # click flag, set true while mouse is being pressed
+        self.click_in_progress = False
+
+        # this is the (x, y, width, height) data, properly scaled, to be outputed
+        self.bounding_rect = []
+
+        # image filename
+        self.filename = ''
+
+        # callback function
+        self.onMouseReleaseFunc = (lambda: print('mouse release func not assigned'))
 
     def mousePressEvent(self, e):
         self.roi = QtWidgets.QLabel(self)
@@ -43,7 +54,24 @@ class ImageBoxLabel(QtWidgets.QLabel):
     def mouseReleaseEvent(self, e):
         self.click_in_progress = False
         self.roi.hide()
-        self.onMouseReleaseFunc()
+
+        self.click_end = [e.x(), e.y()]
+
+        self.click_begin = [f / self.scale_factor for f in self.click_begin]
+        self.click_end = [f / self.scale_factor for f in self.click_end]
+
+        x = int(min(self.click_begin[0], self.click_end[0]))
+        y = int(min(self.click_begin[1], self.click_end[1]))
+        width = int(abs(self.click_begin[0] - self.click_end[0]))
+        height = int(abs(self.click_begin[1] - self.click_end[1]))
+
+        self.bounding_rect = [x, y, width, height]
+
+        if width != 0 and height != 0:
+            annotations.append([self.filename])
+            annotations[-1].append(1)
+            annotations[-1] += self.bounding_rect
+            self.onMouseReleaseFunc()
 
 class Ui_MainWindow(object):
 
@@ -83,11 +111,17 @@ class Ui_MainWindow(object):
         self.actionOpen.setObjectName("actionOpen")
         self.actionOpen.triggered.connect(lambda: self.showFileDialog())
 
+        self.actionSave = QtWidgets.QAction(MainWindow)
+        self.actionSave.setObjectName("actionSave")
+        self.actionSave.triggered.connect(lambda: self.saveToFile())
+
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
-        self.actionQuit.triggered.connect(lambda: quit())
+        self.actionQuit.triggered.connect(lambda: self.saveAndQuit())
+
 
         self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addAction(self.actionSave)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
 
@@ -106,7 +140,21 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", ""))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
+        self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
+
+
+    def saveToFile(self):
+        with open(self.imageDir + '/annotation.dat', 'w') as f:
+            for annotation in annotations:
+                for part in annotation:
+                    f.write(str(part))
+                    f.write(' ')
+                f.write('\n')
+    
+    def saveAndQuit(self):
+        self.saveToFile()
+        quit()
 
 
     def showFileDialog(self):
@@ -128,8 +176,24 @@ class Ui_MainWindow(object):
             px = QtGui.QPixmap(self.imagePaths[imageIdx])
         except IndexError:
             quit()
-        px = px.scaled(200, 200)
         self.label.onMouseRelease(lambda: self.showImage(imageIdx + 1))
+        # get relative filepath
+        self.label.filename = self.imagePaths[imageIdx][len(self.imageDir)+1:]
+
+        og_height = px.height()
+        og_width = px.width()
+
+        if og_width > og_height and og_width > 500:
+            # scale width
+            px = px.scaledToWidth(500)
+            self.label.scale_factor = (px.width() / og_width)
+        elif og_height >= og_width and og_height > 500:
+            #scale height
+            px = px.scaledToHeight(500)
+            self.label.scale_factor = (px.height() / og_height)
+
+
+
         self.label.setPixmap(px)
         self.label.adjustSize()
         self.label.show()
